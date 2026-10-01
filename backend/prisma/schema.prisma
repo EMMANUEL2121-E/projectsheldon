@@ -1,0 +1,72 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String?
+  googleId     String?       @unique
+  name         String
+  xp           Int           @default(20)
+  level        String        @default("Curious Mind")
+  score        Int           @default(10)
+  streak       Int           @default(1)
+  createdAt    DateTime      @default(now())
+  vaultItems   VaultItem[]
+  evaluations  Evaluation[]
+}
+
+model VaultItem {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  type        String   // "fact" | "lecture" | "evaluation" | "chat"
+  previewText String
+  tags        String   // Comma-separated list of tags
+  date        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Evaluation {
+  id               String   @id @default(uuid())
+  title            String
+  description      String
+  category         String
+  feasibility      Int
+  innovation       Int
+  marketPotential  Int
+  complexity       Int
+  verdict          String
+  swotS            String   // Comma-separated or JSON list of strengths
+  swotW            String   // JSON list of weaknesses
+  swotO            String   // JSON list of opportunities
+  swotT            String   // JSON list of threats
+  failures         String   // JSON list of failure points
+  improvements     String   // JSON list of improvements
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+}
+
+model DailyChallenge {
+  id                 String   @id @default(uuid())
+  title              String
+  difficulty         String   // "easy" | "medium" | "hard"
+  difficultyLabel    String
+  xp                 Int
+  pts                Int
+  text               String
+  options            String   // JSON stringified array of option objects
+  correctOptionIndex Int
+  successMsg         String
+  failMsg            String
+  createdAt          DateTime @default(now())
+}

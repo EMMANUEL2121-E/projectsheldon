@@ -1,0 +1,3631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Sheldon - Think Before You Build</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Design Tokens & CSS Variables */
+    :root {
+      --bg-primary: #050814;
+      --bg-secondary: #0b112c;
+      --bg-tertiary: #131b40;
+      --glass-bg: rgba(11, 17, 44, 0.65);
+      --glass-border: rgba(0, 240, 255, 0.15);
+      --glass-border-hover: rgba(0, 240, 255, 0.4);
+      --color-accent: #00f0ff;
+      --color-accent-glow: rgba(0, 240, 255, 0.3);
+      --color-accent-purple: #bd00ff;
+      --color-accent-green: #39ff14;
+      --color-accent-red: #ff3131;
+      --color-text-primary: #f8fafc;
+      --color-text-secondary: #94a3b8;
+      --color-text-muted: #64748b;
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-accent) var(--bg-secondary);
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-accent);
+      border-radius: 4px;
+    }
+
+    /* Particle Background */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* Ambient Glow Spots */
+    .ambient-glow {
+      position: fixed;
+      width: 60vw;
+      height: 60vh;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.05) 0%, rgba(189, 0, 255, 0.02) 50%, transparent 100%);
+      top: -20vh;
+      left: -10vw;
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(100px);
+    }
+    .ambient-glow-2 {
+      position: fixed;
+      width: 50vw;
+      height: 50vh;
+      background: radial-gradient(circle, rgba(189, 0, 255, 0.05) 0%, rgba(0, 240, 255, 0.02) 50%, transparent 100%);
+      bottom: -10vh;
+      right: -10vw;
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(100px);
+    }
+
+    /* Dashboard Layout */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background: rgba(5, 8, 20, 0.85);
+      border-right: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: var(--transition-smooth);
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      color: var(--color-accent);
+      filter: drop-shadow(0 0 8px var(--color-accent-glow));
+      animation: rotate 10s linear infinite;
+    }
+
+    .logo-text h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--color-accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text p {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    /* Navigation Links */
+    .sidebar-nav {
+      flex: 1;
+      padding: 20px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      color: var(--color-text-primary);
+      background: rgba(0, 240, 255, 0.05);
+      border-color: rgba(0, 240, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      color: var(--color-accent);
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.25);
+      box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.05);
+    }
+
+    .nav-item i {
+      font-size: 1.1rem;
+    }
+
+    /* Sidebar Footer / User Profile */
+    .sidebar-footer {
+      padding: 20px;
+      border-top: 1px solid var(--glass-border);
+      background: rgba(5, 8, 20, 0.5);
+    }
+
+    .user-profile {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-purple) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #050814;
+      border: 2px solid var(--glass-border);
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .user-level {
+      font-size: 0.75rem;
+      color: var(--color-accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+    }
+
+    .xp-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .xp-bar {
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-accent-purple));
+      border-radius: 3px;
+      transition: var(--transition-smooth);
+    }
+
+    .xp-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--glass-border);
+      flex: 1;
+      justify-content: center;
+    }
+
+    .stat-badge.streak {
+      color: #ff9d00;
+      border-color: rgba(255, 157, 0, 0.2);
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      max-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      position: relative;
+    }
+
+    /* Header controls (Mobile menu, page title) */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 20px;
+    }
+
+    .page-title h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .page-title p {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--color-text-primary);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition-smooth);
+      text-decoration: none;
+      outline: none;
+    }
+
+    .btn:hover {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: var(--color-accent);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: var(--color-accent);
+      color: var(--bg-primary);
+      border-color: var(--color-accent);
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: #00c8d6;
+      border-color: #00c8d6;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      color: var(--bg-primary);
+    }
+
+    .btn-danger {
+      background: rgba(255, 49, 49, 0.1);
+      border-color: rgba(255, 49, 49, 0.2);
+      color: var(--color-accent-red);
+    }
+    .btn-danger:hover {
+      background: rgba(255, 49, 49, 0.2);
+      border-color: var(--color-accent-red);
+      box-shadow: 0 0 15px rgba(255, 49, 49, 0.2);
+    }
+
+    .mobile-menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--color-text-primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Glassmorphic Card Style */
+    .card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: rgba(0, 240, 255, 0.25);
+      box-shadow: 0 12px 40px 0 rgba(0, 240, 255, 0.08);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+      transform: translateX(-100%);
+      transition: 0.7s;
+    }
+
+    .card:hover::before {
+      transform: translateX(100%);
+    }
+
+    /* Sections */
+    .section {
+      display: none;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .section.active {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* --- 1. DASHBOARD & HERO SECTION --- */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .hero-text h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 40%, var(--color-accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-text p.subtitle {
+      font-size: 1.3rem;
+      color: var(--color-accent);
+      margin-bottom: 24px;
+      font-family: var(--font-mono);
+    }
+
+    .hero-text p.desc {
+      color: var(--color-text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      max-width: 600px;
+    }
+
+    .hero-avatar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, transparent 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #avatar-canvas {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .avatar-core {
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, #ffffff 0%, var(--color-accent) 60%, var(--color-accent-purple) 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 40px var(--color-accent);
+      z-index: 2;
+      animation: pulse 3s infinite ease-in-out;
+    }
+
+    .avatar-label {
+      margin-top: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-accent);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .action-card i {
+      font-size: 2rem;
+      color: var(--color-accent);
+    }
+
+    .action-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .action-card p {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    /* --- 2. CHAT WITH SHELDON --- */
+    .chat-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      height: calc(100vh - 200px);
+      min-height: 500px;
+    }
+
+    .chat-box {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: rgba(5, 8, 20, 0.3);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .message {
+      display: flex;
+      gap: 16px;
+      max-width: 80%;
+      animation: messageSlideIn 0.3s ease-out forwards;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.sheldon {
+      align-self: flex-start;
+    }
+
+    .msg-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .message.user .msg-avatar {
+      background: linear-gradient(135deg, var(--color-accent-purple) 0%, #7000ff 100%);
+      color: white;
+    }
+
+    .message.sheldon .msg-avatar {
+      background: linear-gradient(135deg, var(--color-accent) 0%, #0099ff 100%);
+      color: #050814;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    .msg-content {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .message.user .msg-content {
+      background: rgba(189, 0, 255, 0.08);
+      border-color: rgba(189, 0, 255, 0.2);
+    }
+
+    .message.sheldon .msg-content {
+      background: rgba(0, 240, 255, 0.06);
+      border-color: rgba(0, 240, 255, 0.2);
+    }
+
+    .message-meta {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .message.user .message-meta {
+      text-align: right;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(5, 8, 20, 0.8);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+
+    .chat-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+    }
+
+    /* --- 3. IDEA EVALUATION ENGINE --- */
+    .evaluator-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 30px;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .evaluator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .form-input, .form-textarea, .form-select {
+      background: rgba(5, 8, 20, 0.7);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+      transition: var(--transition-smooth);
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+      background: rgba(255, 49, 49, 0.05);
+      border: 1px solid rgba(255, 49, 49, 0.15);
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .toggle-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-accent-red);
+    }
+
+    .toggle-desc {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: .4s;
+      border-radius: 24px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--color-accent-red);
+    }
+
+    input:focus + .slider {
+      box-shadow: 0 0 1px var(--color-accent-red);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Analysis Loading Overlay */
+    .analysis-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .spinner-dna {
+      position: relative;
+      width: 60px;
+      height: 60px;
+    }
+
+    .spinner-node {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      animation: dnaOrbit 1.6s infinite ease-in-out;
+    }
+
+    .spinner-node:nth-child(2) {
+      background: var(--color-accent-purple);
+      animation-delay: -0.8s;
+    }
+
+    .loading-step {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--color-accent);
+      min-height: 24px;
+    }
+
+    /* Analysis Results Panel */
+    .analysis-results {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .results-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* Scores Dashboard */
+    .scores-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    @media (max-width: 576px) {
+      .scores-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .score-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+
+    .score-circle {
+      position: relative;
+      width: 70px;
+      height: 70px;
+    }
+
+    .score-circle svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .score-circle circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .score-circle .circle-bg {
+      stroke: rgba(255, 255, 255, 0.08);
+    }
+
+    .score-circle .circle-val {
+      stroke: var(--color-accent);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s ease-out;
+    }
+
+    .score-val-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: 700;
+      font-size: 1.1rem;
+      font-family: var(--font-mono);
+    }
+
+    .score-label {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    /* SWOT Layout */
+    .swot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    @media (max-width: 576px) {
+      .swot-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .swot-box {
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid transparent;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--glass-border);
+    }
+
+    .swot-box.s { border-left: 4px solid var(--color-accent-green); }
+    .swot-box.w { border-left: 4px solid #ff9d00; }
+    .swot-box.o { border-left: 4px solid var(--color-accent); }
+    .swot-box.t { border-left: 4px solid var(--color-accent-red); }
+
+    .swot-box-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swot-box.s .swot-box-title { color: var(--color-accent-green); }
+    .swot-box.w .swot-box-title { color: #ff9d00; }
+    .swot-box.o .swot-box-title { color: var(--color-accent); }
+    .swot-box.t .swot-box-title { color: var(--color-accent-red); }
+
+    .swot-box ul {
+      padding-left: 16px;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Verdict Box */
+    .verdict-card {
+      background: rgba(0, 240, 255, 0.03);
+      border: 1px solid var(--color-accent);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .verdict-card.brutally-honest {
+      background: rgba(255, 49, 49, 0.03);
+      border-color: var(--color-accent-red);
+    }
+
+    .verdict-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .verdict-card.brutally-honest .verdict-header {
+      color: var(--color-accent-red);
+    }
+
+    .verdict-card:not(.brutally-honest) .verdict-header {
+      color: var(--color-accent);
+    }
+
+    .verdict-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--color-text-primary);
+    }
+
+    /* Failure Points & Improvements */
+    .details-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .details-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .fail-points-box, .improvements-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .details-box-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fail-points-box .details-box-title { color: var(--color-accent-red); }
+    .improvements-box .details-box-title { color: var(--color-accent-green); }
+
+    .details-box-list {
+      padding-left: 20px;
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* --- 4. DEEP LECTURE MODE --- */
+    .lecture-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 30px;
+    }
+
+    @media (max-width: 992px) {
+      .lecture-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .lecture-viewer {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .lecture-content-card {
+      min-height: 400px;
+    }
+
+    .lecture-header-meta {
+      display: flex;
+      gap: 15px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-accent);
+      margin-bottom: 16px;
+    }
+
+    .lecture-body {
+      line-height: 1.7;
+      color: var(--color-text-primary);
+      font-size: 1rem;
+    }
+
+    .lecture-body h3 {
+      color: var(--color-accent);
+      margin: 24px 0 12px 0;
+      font-size: 1.2rem;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 6px;
+    }
+
+    .lecture-body p {
+      margin-bottom: 16px;
+    }
+
+    .lecture-body ul {
+      margin-bottom: 16px;
+      padding-left: 24px;
+    }
+
+    .lecture-body li {
+      margin-bottom: 8px;
+    }
+
+    /* Podcast Panel */
+    .podcast-panel {
+      position: sticky;
+      top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .podcast-player {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+      background: linear-gradient(180deg, rgba(11, 17, 44, 0.8) 0%, rgba(5, 8, 20, 0.9) 100%);
+    }
+
+    .wave-visualizer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 40px;
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .wave-bar {
+      width: 3px;
+      height: 8px;
+      background: var(--color-accent);
+      border-radius: 2px;
+      transition: height 0.15s ease;
+    }
+
+    .wave-visualizer.playing .wave-bar {
+      animation: wavePulse 1.2s infinite ease-in-out;
+    }
+
+    .wave-visualizer.playing .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+    .wave-visualizer.playing .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+    .wave-visualizer.playing .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+    .wave-visualizer.playing .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+    .wave-visualizer.playing .wave-bar:nth-child(6) { animation-delay: 0.5s; }
+    .wave-visualizer.playing .wave-bar:nth-child(7) { animation-delay: 0.6s; }
+    .wave-visualizer.playing .wave-bar:nth-child(8) { animation-delay: 0.7s; }
+    .wave-visualizer.playing .wave-bar:nth-child(9) { animation-delay: 0.8s; }
+    .wave-visualizer.playing .wave-bar:nth-child(10) { animation-delay: 0.9s; }
+
+    .podcast-info {
+      width: 100%;
+    }
+
+    .podcast-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .podcast-subtitle {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--color-accent);
+      border-radius: 3px;
+      position: relative;
+    }
+
+    .progress-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      width: 100%;
+      margin-top: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .control-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .control-btn:hover {
+      color: var(--color-accent);
+      transform: scale(1.1);
+    }
+
+    .control-btn.play-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: var(--bg-primary);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    }
+
+    .control-btn.play-btn:hover {
+      background: #00c8d6;
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
+
+    .player-settings {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 10px;
+      border-top: 1px solid var(--glass-border);
+      padding-top: 15px;
+      margin-top: 5px;
+    }
+
+    .player-select {
+      background: rgba(5, 8, 20, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      color: white;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      outline: none;
+      font-family: var(--font-mono);
+    }
+
+    /* Notes Area */
+    .notes-card {
+      flex: 1;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(5, 8, 20, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 12px;
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .notes-textarea:focus {
+      border-color: var(--color-accent);
+    }
+
+    /* --- 5. DEBATE MODE --- */
+    .debate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .debate-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .debate-side-card {
+      border-top: 4px solid transparent;
+    }
+
+    .debate-side-card.pro { border-top-color: var(--color-accent-purple); }
+    .debate-side-card.con { border-top-color: #ff9d00; }
+
+    .debate-side-title {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+
+    .debate-side-card.pro .debate-side-title { color: var(--color-accent-purple); }
+    .debate-side-card.con .debate-side-title { color: #ff9d00; }
+
+    .debate-text-content {
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+
+    .debate-text-content p {
+      margin-bottom: 10px;
+    }
+
+    .debate-text-content ul {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+
+    .debate-text-content li {
+      margin-bottom: 6px;
+    }
+
+    /* --- 6. FACT GENERATOR --- */
+    .fact-card {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px;
+      min-height: 320px;
+    }
+
+    .fact-tag {
+      font-family: var(--font-mono);
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    .fact-text {
+      font-size: 1.5rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: white;
+      max-width: 750px;
+    }
+
+    .fact-explanation {
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      max-width: 650px;
+    }
+
+    .fact-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      border-top: 1px solid var(--glass-border);
+      width: 100%;
+      justify-content: center;
+      padding-top: 20px;
+      margin-top: 10px;
+    }
+
+    .fact-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fact-categories {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .cat-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      color: var(--color-text-secondary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      transition: var(--transition-smooth);
+    }
+
+    .cat-btn:hover, .cat-btn.active {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* --- 7. INTELLECTUAL CHALLENGE MODE --- */
+    .challenge-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 30px;
+    }
+
+    @media (max-width: 992px) {
+      .challenge-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .puzzle-card {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .puzzle-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 15px;
+    }
+
+    .puzzle-difficulty {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .puzzle-difficulty.easy { background: rgba(57, 255, 20, 0.1); color: var(--color-accent-green); }
+    .puzzle-difficulty.medium { background: rgba(255, 157, 0, 0.1); color: #ff9d00; }
+    .puzzle-difficulty.hard { background: rgba(255, 49, 49, 0.1); color: var(--color-accent-red); }
+
+    .puzzle-rewards {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-accent);
+    }
+
+    .puzzle-text {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    .puzzle-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .puzzle-option {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    .puzzle-option:hover {
+      background: rgba(0, 240, 255, 0.05);
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+
+    .puzzle-option.selected {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: var(--color-accent);
+    }
+
+    .puzzle-option.correct {
+      background: rgba(57, 255, 20, 0.08);
+      border-color: var(--color-accent-green);
+    }
+
+    .puzzle-option.incorrect {
+      background: rgba(255, 49, 49, 0.08);
+      border-color: var(--color-accent-red);
+    }
+
+    .puzzle-option-marker {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      background: rgba(5, 8, 20, 0.5);
+      flex-shrink: 0;
+    }
+
+    .puzzle-option.selected .puzzle-option-marker {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .puzzle-option.correct .puzzle-option-marker {
+      border-color: var(--color-accent-green);
+      background: var(--color-accent-green);
+      color: #050814;
+    }
+
+    .puzzle-option.incorrect .puzzle-option-marker {
+      border-color: var(--color-accent-red);
+      background: var(--color-accent-red);
+      color: white;
+    }
+
+    .puzzle-feedback {
+      border-radius: 8px;
+      padding: 16px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .puzzle-feedback.success {
+      display: block;
+      background: rgba(57, 255, 20, 0.05);
+      border: 1px solid rgba(57, 255, 20, 0.2);
+    }
+
+    .puzzle-feedback.fail {
+      display: block;
+      background: rgba(255, 49, 49, 0.05);
+      border: 1px solid rgba(255, 49, 49, 0.2);
+    }
+
+    .puzzle-feedback-title {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+
+    .puzzle-feedback.success .puzzle-feedback-title { color: var(--color-accent-green); }
+    .puzzle-feedback.fail .puzzle-feedback-title { color: var(--color-accent-red); }
+
+    /* Leaderboard / Achievements Panel */
+    .achievements-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .achievements-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .achievement-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+
+    .achievement-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      border: 1px solid var(--glass-border);
+    }
+
+    .achievement-item.unlocked .achievement-icon {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(189, 0, 255, 0.15) 100%);
+      color: var(--color-accent);
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+
+    .achievement-item.locked {
+      opacity: 0.5;
+    }
+
+    .achievement-item.locked .achievement-icon {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--color-text-muted);
+    }
+
+    .achievement-info {
+      flex: 1;
+    }
+
+    .achievement-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .achievement-desc {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    /* --- 8. KNOWLEDGE VAULT --- */
+    .vault-controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-input-wrapper i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      font-size: 0.95rem;
+    }
+
+    .search-input {
+      background: rgba(5, 8, 20, 0.7);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 10px 16px 10px 38px;
+      color: white;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .search-input:focus {
+      border-color: var(--color-accent);
+    }
+
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .vault-card {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      height: 100%;
+    }
+
+    .vault-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .vault-card-type {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .vault-card-type.fact { background: rgba(0, 240, 255, 0.1); color: var(--color-accent); }
+    .vault-card-type.lecture { background: rgba(189, 0, 255, 0.1); color: var(--color-accent-purple); }
+    .vault-card-type.evaluation { background: rgba(57, 255, 20, 0.1); color: var(--color-accent-green); }
+
+    .vault-card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .vault-card-preview {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .vault-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--glass-border);
+      padding-top: 12px;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .vault-tags {
+      display: flex;
+      gap: 6px;
+    }
+
+    .vault-tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .empty-vault-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--color-text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-vault-state i {
+      font-size: 3rem;
+      color: var(--glass-border);
+    }
+
+    /* Keyframe Animations */
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 40px rgba(0, 240, 255, 0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(0, 240, 255, 0.7), 0 0 20px rgba(189, 0, 255, 0.4); }
+      100% { transform: scale(1); box-shadow: 0 0 40px rgba(0, 240, 255, 0.4); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes messageSlideIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes wavePulse {
+      0%, 100% { height: 8px; }
+      50% { height: 35px; }
+    }
+
+    @keyframes dnaOrbit {
+      0%, 100% { transform: translate(-20px, 0) scale(1); z-index: 2; }
+      25% { transform: translate(0, -10px) scale(0.8); }
+      50% { transform: translate(20px, 0) scale(0.6); z-index: -1; }
+      75% { transform: translate(0, 10px) scale(0.8); }
+    }
+
+    /* Mobile Responsive Overrides */
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        position: static;
+      }
+      .sidebar-nav {
+        display: none;
+      }
+      .sidebar-nav.mobile-show {
+        display: flex;
+      }
+      .sidebar-footer {
+        display: none;
+      }
+      .mobile-menu-toggle {
+        display: block;
+      }
+      .hero-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      .hero-text h1 {
+        font-size: 2.2rem;
+      }
+      .avatar-wrapper {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+      }
+      .main-content {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Canvas Background -->
+  <canvas id="particle-canvas"></canvas>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="app-container">
+
+    <!-- Sidebar Drawer -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <i data-lucide="atom" class="logo-icon"></i>
+          <div class="logo-text">
+            <h1>AI SHELDON</h1>
+            <p>Think Before You Build</p>
+          </div>
+        </div>
+        <button class="mobile-menu-toggle" id="menu-toggle">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+
+      <!-- Navigation links -->
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <div class="nav-item active" data-section="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" data-section="chat">
+          <i data-lucide="messages-square"></i>
+          <span>Chat with Dr. Logic</span>
+        </div>
+        <div class="nav-item" data-section="evaluator">
+          <i data-lucide="brain-circuit"></i>
+          <span>Idea Evaluator</span>
+        </div>
+        <div class="nav-item" data-section="lecture">
+          <i data-lucide="graduation-cap"></i>
+          <span>Lecture & Podcast</span>
+        </div>
+        <div class="nav-item" data-section="debate">
+          <i data-lucide="scale"></i>
+          <span>Debate Chamber</span>
+        </div>
+        <div class="nav-item" data-section="fact">
+          <i data-lucide="lightbulb"></i>
+          <span>Fact Generator</span>
+        </div>
+        <div class="nav-item" data-section="challenge">
+          <i data-lucide="puzzle"></i>
+          <span>Puzzle Arena</span>
+        </div>
+        <div class="nav-item" data-section="vault">
+          <i data-lucide="archive"></i>
+          <span>Knowledge Vault</span>
+        </div>
+      </nav>
+
+      <!-- Sidebar User Profile (XP level tracking) -->
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-info">
+            <div class="user-avatar" id="profile-avatar">CM</div>
+            <div class="user-details">
+              <span class="user-name">Curious Thinker</span>
+              <span class="user-level" id="profile-level">Curious Mind</span>
+            </div>
+          </div>
+          <div class="xp-bar-container">
+            <div class="xp-bar" id="profile-xp-bar" style="width: 20%;"></div>
+          </div>
+          <div class="xp-text">
+            <span id="profile-xp-text">20 / 100 XP</span>
+            <span>LVL 1</span>
+          </div>
+          <div class="stats-row">
+            <div class="stat-badge streak">
+              <i data-lucide="flame" style="width:14px; height:14px;"></i>
+              <span id="profile-streak">1 Day</span>
+            </div>
+            <div class="stat-badge">
+              <i data-lucide="trophy" style="width:14px; height:14px; color:#ffdd00;"></i>
+              <span id="profile-score">10 Pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      
+      <!-- Top header layout -->
+      <div class="content-header">
+        <div class="page-title">
+          <h2 id="section-title">Futuristic Laboratory Dashboard</h2>
+          <p id="section-desc">Welcome to the central intelligence dashboard. Prepare to evaluate concepts and explore logic.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn" onclick="triggerEasterEgg()">
+            <i data-lucide="sparkles"></i>
+            <span>Bazinga!</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== 1. DASHBOARD & HERO SECTION ==================== -->
+      <section id="section-dashboard" class="section active">
+        <div class="card hero-grid">
+          <div class="hero-text">
+            <h1>AI SHELDON</h1>
+            <p class="subtitle">Think Before You Build.</p>
+            <p class="desc">A brutally honest logical advisor, mentor, and fact explorer inspired by the ultimate analytical mind. Challenge your premises, audit your engineering architecture, and verify your facts before deploying them to reality.</p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="switchSection('evaluator')">
+                <i data-lucide="brain-circuit"></i>
+                <span>Evaluate My Idea</span>
+              </button>
+              <button class="btn" onclick="switchSection('chat')">
+                <i data-lucide="message-square"></i>
+                <span>Brutal Honesty Chat</span>
+              </button>
+              <button class="btn" onclick="switchSection('lecture')">
+                <i data-lucide="headphones"></i>
+                <span>Listen to Lecture</span>
+              </button>
+            </div>
+          </div>
+          <div class="hero-avatar-container">
+            <div class="avatar-wrapper">
+              <canvas id="avatar-canvas"></canvas>
+              <div class="avatar-core"></div>
+            </div>
+            <div class="avatar-label" id="avatar-status">Core Online</div>
+          </div>
+        </div>
+
+        <h3 style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-accent); text-transform: uppercase; margin-top: 10px;">Select Laboratory Systems</h3>
+        <div class="quick-actions-grid">
+          <div class="card action-card" onclick="switchSection('evaluator')">
+            <i data-lucide="line-chart"></i>
+            <h3>Idea Evaluation Engine</h3>
+            <p>Inputs: market sizing, technical specifications, and assumptions. Sheldon scores them and audits viability.</p>
+          </div>
+          <div class="card action-card" onclick="switchSection('lecture')">
+            <i data-lucide="book-open"></i>
+            <h3>Deep Lectures</h3>
+            <p>Generate highly structured summaries across quantum physics, code complexity, or astrophysics.</p>
+          </div>
+          <div class="card action-card" onclick="switchSection('challenge')">
+            <i data-lucide="brain"></i>
+            <h3>Daily Logic Riddles</h3>
+            <p>Solve curated puzzles. Test your logic quotient against an uncompromising scoring matrix.</p>
+          </div>
+          <div class="card action-card" onclick="switchSection('debate')">
+            <i data-lucide="git-pull-request"></i>
+            <h3>Debate Chamber</h3>
+            <p>Submit a scientific or socio-techno hypothesis. Sheldon outlines the absolute logical pros & cons.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 2. CHAT WITH SHELDON ==================== -->
+      <section id="section-chat" class="section">
+        <div class="card chat-container">
+          <div class="chat-box">
+            <div class="chat-messages" id="chat-messages">
+              <div class="message sheldon">
+                <div class="msg-avatar">S</div>
+                <div>
+                  <div class="msg-content">
+                    Greetings, human mind. I am Dr. Logic. I am programmed to assist you in making decisions, correcting scientific misinformation, and teaching concepts. I must warn you: I do not validate weak assumptions, nor do I engage in comforting platitudes. Tell me, what hypothesis are we testing today?
+                  </div>
+                  <div class="message-meta">Dr. Logic • 19:42:00</div>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-area">
+              <input type="text" class="chat-input" id="chat-input-field" placeholder="Enter your prompt or hypothesis (e.g. 'I want to build a flying taxi company')..." onkeypress="handleChatKeyPress(event)">
+              <button class="btn btn-primary" onclick="sendMessageToSheldon()" style="padding: 14px 24px;">
+                <i data-lucide="send"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 3. IDEA EVALUATION ENGINE ==================== -->
+      <section id="section-evaluator" class="section">
+        <div class="evaluator-grid">
+          
+          <!-- Idea Submission Panel -->
+          <div class="card">
+            <h3 style="margin-bottom: 20px; font-weight:700;">Parameters of Viability</h3>
+            <div class="input-group">
+              <label class="input-label" for="idea-title">Concept Title</label>
+              <input type="text" class="form-input" id="idea-title" placeholder="e.g. Supersonic Passenger Drone Network">
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="idea-category">Technological Domain</label>
+              <select class="form-select" id="idea-category">
+                <option value="aerospace">Aerospace & Flight Mechanics</option>
+                <option value="energy">Energy & Battery Chemistry</option>
+                <option value="software">Distributed Systems & AI Architecture</option>
+                <option value="biotech">Biomedical & Synthetic Biology</option>
+                <option value="consumer">Consumer Hardware & Operations</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="idea-desc">Technical Specification & Assumptions</label>
+              <textarea class="form-textarea" id="idea-desc" placeholder="Describe the physics, scaling properties, market mechanics, and infrastructure constraints of your plan..."></textarea>
+            </div>
+
+            <!-- Brutally Honest Toggle -->
+            <div class="toggle-container">
+              <div class="toggle-info">
+                <div class="toggle-title">Brutally Honest Audit</div>
+                <div class="toggle-desc">Enable uncompromising logical stress-testing.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="idea-brutal-mode" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;" onclick="runIdeaEvaluation()">
+              <i data-lucide="cpu"></i>
+              <span>Initialize Logical Verification</span>
+            </button>
+          </div>
+
+          <!-- Loading & Results Workspace -->
+          <div class="card" style="min-height: 480px; display: flex; flex-direction: column;">
+            
+            <!-- Default Placeholder State -->
+            <div id="eval-placeholder" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 40px; color: var(--color-text-secondary);">
+              <i data-lucide="bar-chart-3" style="font-size: 3rem; margin-bottom: 16px; color: var(--glass-border);"></i>
+              <h4 style="margin-bottom: 8px; color: white;">Awaiting Parameter Submission</h4>
+              <p style="font-size:0.85rem; max-width: 320px;">Provide concept details in the left panel. AI Sheldon will execute a SWOT analysis, calculate feasibility coefficients, and deliver a verdict.</p>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div id="eval-loading" class="analysis-loading">
+              <div class="spinner-dna">
+                <div class="spinner-node"></div>
+                <div class="spinner-node"></div>
+              </div>
+              <p style="font-family: var(--font-mono); color: white;">RUNNING LOGICAL AUDIT PROTOCOLS...</p>
+              <div class="loading-step" id="loading-step-text">Checking physical laws...</div>
+            </div>
+
+            <!-- Results Output -->
+            <div id="eval-results" class="analysis-results" style="display: none;">
+              <div class="results-header">
+                <div>
+                  <h3 class="results-title" id="results-title-text">Evaluation Report: Suborbital Cargo Rocket</h3>
+                  <p style="font-size: 0.8rem; color: var(--color-text-muted); font-family: var(--font-mono);" id="results-meta-text">AEROSPACE DOMAIN • TIMESTAMP: 19:42:15</p>
+                </div>
+                <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" id="save-eval-btn" onclick="saveEvaluationToVault()">
+                  <i data-lucide="bookmark" style="width: 14px; height: 14px;"></i>
+                  <span>Save to Vault</span>
+                </button>
+              </div>
+
+              <!-- Scores -->
+              <div class="scores-row">
+                <div class="score-card">
+                  <div class="score-circle">
+                    <svg><circle class="circle-bg" cx="35" cy="35" r="30"></circle><circle class="circle-val" id="score-feasibility" cx="35" cy="35" r="30" stroke-dasharray="188.4" stroke-dashoffset="188.4"></circle></svg>
+                    <div class="score-val-text" id="score-feasibility-txt">0</div>
+                  </div>
+                  <span class="score-label">Feasibility</span>
+                </div>
+                <div class="score-card">
+                  <div class="score-circle">
+                    <svg><circle class="circle-bg" cx="35" cy="35" r="30"></circle><circle class="circle-val" id="score-innovation" cx="35" cy="35" r="30" stroke-dasharray="188.4" stroke-dashoffset="188.4"></circle></svg>
+                    <div class="score-val-text" id="score-innovation-txt">0</div>
+                  </div>
+                  <span class="score-label">Innovation</span>
+                </div>
+                <div class="score-card">
+                  <div class="score-circle">
+                    <svg><circle class="circle-bg" cx="35" cy="35" r="30"></circle><circle class="circle-val" id="score-market" cx="35" cy="35" r="30" stroke-dasharray="188.4" stroke-dashoffset="188.4"></circle></svg>
+                    <div class="score-val-text" id="score-market-txt">0</div>
+                  </div>
+                  <span class="score-label">Market Pot.</span>
+                </div>
+                <div class="score-card">
+                  <div class="score-circle">
+                    <svg><circle class="circle-bg" cx="35" cy="35" r="30"></circle><circle class="circle-val" id="score-complexity" cx="35" cy="35" r="30" stroke-dasharray="188.4" stroke-dashoffset="188.4"></circle></svg>
+                    <div class="score-val-text" id="score-complexity-txt">0</div>
+                  </div>
+                  <span class="score-label">Complexity</span>
+                </div>
+              </div>
+
+              <!-- Verdict Block -->
+              <div class="verdict-card" id="results-verdict-card">
+                <div class="verdict-header">
+                  <i data-lucide="shield-alert" id="verdict-icon" style="width: 20px; height: 20px;"></i>
+                  <span id="verdict-header-text">VERDICT: SEVERE STRUCTURAL RECONSTRUCTION REQUIRED</span>
+                </div>
+                <p class="verdict-text" id="results-verdict-text">
+                  Your idea is charmingly naive. It assumes that fluid dynamics can be bypassed through sheer enthusiasm. However, battery weight ratios make electric supersonic flight impossible.
+                </p>
+              </div>
+
+              <!-- SWOT Matrix -->
+              <div class="swot-grid">
+                <div class="swot-box s">
+                  <div class="swot-box-title"><i data-lucide="shield"></i> Strengths</div>
+                  <ul id="results-swot-s">
+                    <li>Minimal initial hardware prototyping needed.</li>
+                    <li>Highly novel intellectual property possibilities.</li>
+                  </ul>
+                </div>
+                <div class="swot-box w">
+                  <div class="swot-box-title"><i data-lucide="alert-circle"></i> Weaknesses</div>
+                  <ul id="results-swot-w">
+                    <li>Severe heat dissipation issues at sustained speeds.</li>
+                    <li>Immense capital requirements for certification.</li>
+                  </ul>
+                </div>
+                <div class="swot-box o">
+                  <div class="swot-box-title"><i data-lucide="trending-up"></i> Opportunities</div>
+                  <ul id="results-swot-o">
+                    <li>Capture high-value military intelligence niches.</li>
+                    <li>Licensing proprietary aerodynamic cooling models.</li>
+                  </ul>
+                </div>
+                <div class="swot-box t">
+                  <div class="swot-box-title"><i data-lucide="zap"></i> Threats</div>
+                  <ul id="results-swot-t">
+                    <li>Widespread regulatory bans on sonic boom overflights.</li>
+                    <li>Battery safety and degradation limits.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Details Row -->
+              <div class="details-row">
+                <div class="fail-points-box">
+                  <div class="details-box-title">
+                    <i data-lucide="skull"></i> Potential Failure Points
+                  </div>
+                  <ul class="details-box-list" id="results-failures">
+                    <li>Energy density constraints prevent launch window clearance.</li>
+                    <li>High friction leading to materials structural failure.</li>
+                  </ul>
+                </div>
+                <div class="improvements-box">
+                  <div class="details-box-title">
+                    <i data-lucide="wrench"></i> Recommended Adjustments
+                  </div>
+                  <ul class="details-box-list" id="results-improvements">
+                    <li>Deploy hydrogen fuel cells instead of lithium-ion batteries.</li>
+                    <li>Reduce weight thresholds by removing humanoid passenger cavities.</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 4. DEEP LECTURE MODE & PODCAST ==================== -->
+      <section id="section-lecture" class="section">
+        <!-- Settings Bar -->
+        <div class="card" style="padding: 16px; display: flex; gap: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.8rem; font-family:var(--font-mono); color:var(--color-text-secondary);">TOPIC:</span>
+              <select class="form-select" id="lecture-topic" style="width: auto; padding: 6px 12px; font-size: 0.85rem;" onchange="generateLecture()">
+                <option value="quantum">Quantum Superposition & Computing</option>
+                <option value="complexity">Big O Complexity & Turing Halting</option>
+                <option value="blackhole">Black Hole Singularity Mechanics</option>
+                <option value="psych">Behavioral Psychology & Cognitive Bias</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.8rem; font-family:var(--font-mono); color:var(--color-text-secondary);">DEPTH:</span>
+              <select class="form-select" id="lecture-level" style="width: auto; padding: 6px 12px; font-size: 0.85rem;" onchange="generateLecture()">
+                <option value="beginner">Beginner (Simulated Analogy)</option>
+                <option value="intermediate">Intermediate (Formulaic)</option>
+                <option value="expert">Expert (Rigorous Derivation)</option>
+              </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.8rem; font-family:var(--font-mono); color:var(--color-text-secondary);">TIME:</span>
+              <select class="form-select" id="lecture-duration" style="width: auto; padding: 6px 12px; font-size: 0.85rem;" onchange="generateLecture()">
+                <option value="15">15 Minutes</option>
+                <option value="30">30 Minutes</option>
+                <option value="60">60 Minutes</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn" onclick="saveLectureToVault()">
+            <i data-lucide="bookmark"></i>
+            <span>Save Outline</span>
+          </button>
+        </div>
+
+        <div class="lecture-layout">
+          <!-- Text Viewer -->
+          <div class="lecture-viewer">
+            <div class="card lecture-content-card">
+              <div class="lecture-header-meta">
+                <span id="lecture-meta-topic">QUANTUM COMPUTING</span>
+                <span>•</span>
+                <span id="lecture-meta-level">EXPERT LEVEL</span>
+                <span>•</span>
+                <span id="lecture-meta-dur">30 MIN LECTURE</span>
+              </div>
+              <h2 id="lecture-title-text" style="font-size: 1.8rem; margin-bottom: 20px; font-weight: 800;">Coherence Loss and Quantum Gate Decoupling</h2>
+              <div class="lecture-body" id="lecture-body-content">
+                <!-- Text populated dynamically by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Podcast Sidebar -->
+          <div class="podcast-panel">
+            <div class="card podcast-player">
+              <div class="podcast-subtitle" style="text-transform: uppercase; color: var(--color-accent);">Podcast Mode</div>
+              
+              <!-- Wave Visualizer -->
+              <div class="wave-visualizer" id="wave-vis">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+              </div>
+
+              <!-- Audio Info -->
+              <div class="podcast-info">
+                <div class="podcast-title" id="podcast-title-txt">Coherence Loss in Gates</div>
+                <div class="podcast-subtitle">Presented by Dr. Logic</div>
+              </div>
+
+              <!-- Progress Slider -->
+              <div style="width: 100%;">
+                <div class="progress-bar-container" id="player-progress-bg" onclick="seekAudio(event)">
+                  <div class="progress-bar-fill" id="player-progress-fill"></div>
+                </div>
+                <div class="progress-time">
+                  <span id="player-time-current">0:00</span>
+                  <span id="player-time-total">4:12</span>
+                </div>
+              </div>
+
+              <!-- Playback controls -->
+              <div class="player-controls">
+                <button class="control-btn" onclick="skipAudio(-10)">
+                  <i data-lucide="rotate-ccw"></i>
+                </button>
+                <button class="control-btn play-btn" id="play-pause-btn" onclick="toggleAudioPlayback()">
+                  <i data-lucide="play" id="play-icon"></i>
+                </button>
+                <button class="control-btn" onclick="skipAudio(10)">
+                  <i data-lucide="rotate-cw"></i>
+                </button>
+              </div>
+
+              <!-- Voice & Speed Parameters -->
+              <div class="player-settings">
+                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+                  <span style="font-size:0.65rem; color:var(--color-text-muted); font-family:var(--font-mono);">VOICE MODEL</span>
+                  <select class="player-select" id="player-voice" onchange="speechSynthesis.cancel()">
+                    <option value="sheldon">Dr. Logic (Analytic/Fast)</option>
+                    <option value="professor">Professor Voice (Deep)</option>
+                    <option value="scientist">Scientist Voice (Precise)</option>
+                  </select>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+                  <span style="font-size:0.65rem; color:var(--color-text-muted); font-family:var(--font-mono);">SPEED</span>
+                  <select class="player-select" id="player-speed" onchange="updateSpeechRate()">
+                    <option value="1">1.00x</option>
+                    <option value="1.2">1.20x</option>
+                    <option value="1.5" selected>1.50x</option>
+                    <option value="2">2.00x</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="card notes-card">
+              <h4 style="margin-bottom: 10px; font-size: 0.95rem; font-weight: 700;">Lecture Transcripts & Notes</h4>
+              <textarea class="notes-textarea" placeholder="Record your intellectual findings and thoughts here..."></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 5. DEBATE CHAMBER ==================== -->
+      <section id="section-debate" class="section">
+        <div class="card">
+          <h3 style="margin-bottom: 15px; font-weight: 700;">Submit Thesis for Logical Dissection</h3>
+          <div class="chat-input-area" style="margin-top: 0;">
+            <input type="text" class="chat-input" id="debate-input-field" placeholder="Enter a claim (e.g. 'Human Mars colonization is a waste of capital')" onkeypress="handleDebateKeyPress(event)">
+            <button class="btn btn-primary" onclick="initiateDebate()">
+              <i data-lucide="scale"></i>
+              <span>Deconstruct</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="debate-grid" id="debate-results" style="display: none;">
+          <!-- Pro Argument -->
+          <div class="card debate-side-card pro">
+            <div class="debate-side-title">
+              <i data-lucide="plus-circle"></i>
+              <span>Proponent Logics (Supporting Thesis)</span>
+            </div>
+            <div class="debate-text-content" id="debate-pro-text">
+              <!-- Populate dynamically -->
+            </div>
+          </div>
+
+          <!-- Con Argument -->
+          <div class="card debate-side-card con">
+            <div class="debate-side-title">
+              <i data-lucide="minus-circle"></i>
+              <span>Opponent Logics (Deconstructing Thesis)</span>
+            </div>
+            <div class="debate-text-content" id="debate-con-text">
+              <!-- Populate dynamically -->
+            </div>
+          </div>
+
+          <!-- Sheldon Conclusion -->
+          <div class="card" style="grid-column: 1 / -1; border-left: 4px solid var(--color-accent);">
+            <h4 style="font-family: var(--font-mono); color: var(--color-accent); margin-bottom: 8px; text-transform: uppercase;">Logical Synthesis & Conclusion</h4>
+            <p id="debate-conclusion-text" style="font-size: 0.95rem; line-height: 1.6; color: var(--color-text-primary);">
+              Evaluating both paradigms leads to a singular deduction: Your original thesis is based on an incomplete set of empirical data. The capital expenditure cannot be classified as a waste, nor is it a guaranteed yield. It is a high-risk venture option.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 6. FACT GENERATOR ==================== -->
+      <section id="section-fact" class="section">
+        <!-- Categories selector -->
+        <div class="fact-categories">
+          <button class="cat-btn active" onclick="loadFactCategory('space')">Space</button>
+          <button class="cat-btn" onclick="loadFactCategory('physics')">Physics</button>
+          <button class="cat-btn" onclick="loadFactCategory('math')">Mathematics</button>
+          <button class="cat-btn" onclick="loadFactCategory('tech')">Technology</button>
+          <button class="cat-btn" onclick="loadFactCategory('biology')">Biology</button>
+          <button class="cat-btn" onclick="loadFactCategory('history')">History</button>
+          <button class="cat-btn" onclick="loadFactCategory('psych')">Psychology</button>
+        </div>
+
+        <div class="card fact-card">
+          <span class="fact-tag" id="fact-tag-text">Space Mechanics</span>
+          <p class="fact-text" id="fact-content-text">Venus is the only planet in our solar system that rotates clockwise on its axis.</p>
+          <p class="fact-explanation" id="fact-expl-text">Because of this retrograde rotation, the Sun rises in the west and sets in the east on Venus. This is hypothesized to be the result of a massive ancient collision that flipped the planet's axis.</p>
+          
+          <div class="fact-meta">
+            <span><i data-lucide="book-open"></i> Source: <strong id="fact-source-text">NASA Space Sciences</strong></span>
+            <span>•</span>
+            <span>Why it matters: <span id="fact-importance-text">Proof of chaotic planetary collision dynamics.</span></span>
+          </div>
+
+          <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <button class="btn btn-primary" onclick="generateRandomFact()">
+              <i data-lucide="sparkles"></i>
+              <span>Surprise Me</span>
+            </button>
+            <button class="btn" onclick="saveFactToVault()">
+              <i data-lucide="heart"></i>
+              <span>Save Favorite</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 7. PUZZLE ARENA ==================== -->
+      <section id="section-challenge" class="section">
+        <div class="challenge-grid">
+          
+          <!-- Puzzle Interaction Card -->
+          <div class="card puzzle-card">
+            <div class="puzzle-header">
+              <span class="puzzle-difficulty medium" id="puzzle-diff-badge">Medium Difficulty</span>
+              <span class="puzzle-rewards" id="puzzle-xp-badge">+20 XP • +10 Pts</span>
+            </div>
+            
+            <h3 id="puzzle-title-txt">The Paradox of the Two Guards</h3>
+            <p class="puzzle-text" id="puzzle-body-txt">
+              You stand before two doors. One door leads to absolute victory (and a clean whiteboard), the other to immediate academic failure. Each door is guarded by a sentinel. One sentinel always speaks the absolute truth; the other always lies. You do not know which sentinel guards which door, nor who is the liar. You can ask exactly one question to one of the sentinels. What question leads you to victory?
+            </p>
+
+            <div class="puzzle-options" id="puzzle-options-container">
+              <!-- Generated dynamically by JS -->
+            </div>
+
+            <!-- Feedback block -->
+            <div class="puzzle-feedback" id="puzzle-feedback-card">
+              <div class="puzzle-feedback-title" id="puzzle-feedback-title-txt">Verification Failed</div>
+              <p id="puzzle-feedback-desc-txt">That question is self-referential and fails to resolve the binary decision tree. Try thinking sequentially.</p>
+            </div>
+
+            <button class="btn btn-primary" style="justify-content: center; display: none;" id="next-puzzle-btn" onclick="loadNextPuzzle()">
+              <span>Load Next Challenge</span>
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- Achievements Sidebar -->
+          <div class="achievements-panel">
+            <div class="card">
+              <h3 style="margin-bottom: 15px; font-weight:700;">Intellectual Rankings</h3>
+              <div class="achievements-list">
+                <div class="achievement-item unlocked">
+                  <div class="achievement-icon"><i data-lucide="check-circle-2"></i></div>
+                  <div class="achievement-info">
+                    <div class="achievement-title">Curious Mind</div>
+                    <div class="achievement-desc">Accumulated 10 XP. The journey into logic begins.</div>
+                  </div>
+                </div>
+                <div class="achievement-item locked" id="ach-level-2">
+                  <div class="achievement-icon"><i data-lucide="award"></i></div>
+                  <div class="achievement-info">
+                    <div class="achievement-title">Thinker (Level 2)</div>
+                    <div class="achievement-desc">Reach 100 XP. Show mastery over basic logic.</div>
+                  </div>
+                </div>
+                <div class="achievement-item locked" id="ach-level-3">
+                  <div class="achievement-icon"><i data-lucide="shield-check"></i></div>
+                  <div class="achievement-info">
+                    <div class="achievement-title">Analyst (Level 3)</div>
+                    <div class="achievement-desc">Reach 250 XP. Solve complex system failure paths.</div>
+                  </div>
+                </div>
+                <div class="achievement-item locked" id="ach-level-6">
+                  <div class="achievement-icon"><i data-lucide="glasses"></i></div>
+                  <div class="achievement-info">
+                    <div class="achievement-title">Genius (Level 6)</div>
+                    <div class="achievement-desc">Reach 1000 XP. Display outstanding intellectual rigor.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== 8. KNOWLEDGE VAULT ==================== -->
+      <section id="section-vault" class="section">
+        <div class="card">
+          <div class="vault-controls">
+            <div class="search-input-wrapper">
+              <i data-lucide="search"></i>
+              <input type="text" class="search-input" id="vault-search-field" placeholder="Search saved items by title, contents, or tags..." oninput="renderVaultGrid()">
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn" style="padding: 10px 14px;" onclick="clearVault()">
+                <i data-lucide="trash-2"></i>
+                <span>Clear Vault</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="vault-grid" id="vault-grid-container">
+          <!-- Filled dynamically by JS -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Simulated Data Engine -->
+  <script>
+    // System Puzzles DB
+    const PUZZLES = [
+      {
+        id: 1,
+        title: "The Paradox of the Two Guards",
+        diff: "medium",
+        diffLabel: "Medium Difficulty",
+        xp: 20,
+        pts: 10,
+        text: "You stand before two doors. One door leads to absolute victory, the other to immediate academic failure. Each door is guarded by a sentinel. One always speaks the absolute truth; the other always lies. You do not know which sentinel is which. You can ask exactly one question to one of the sentinels. What question leads you to victory?",
+        options: [
+          { text: "Ask: 'Which door would the other guard say is the winner?' and take the opposite.", correct: true },
+          { text: "Ask: 'Are you the liar?' and walk through the door behind him.", correct: false },
+          { text: "Ask: 'Does 2 + 2 equal 4?' then take the door behind him.", correct: false },
+          { text: "Flip a coin. The probability is 50-50, which is the maximum solvable threshold anyway.", correct: false }
+        ],
+        successMsg: "Bazinga! Exactly. The liar will lie about the truth-teller's honest answer, and the truth-teller will honestly tell you the liar's lie. In both cases, asking what the OTHER would say results in a lie, so taking the opposite door guarantees victory. An elegant binary operation.",
+        failMsg: "No, no, no. That question resolves nothing. If you ask the liar if he is the liar, he will lie and say 'No'. If you ask the truth-teller, he will say 'No'. You have extracted zero binary information. Think before you choose!"
+      },
+      {
+        id: 2,
+        title: "The Three Light Switches",
+        diff: "easy",
+        diffLabel: "Easy Difficulty",
+        xp: 10,
+        pts: 5,
+        text: "In an attic, there are three light switches in the 'off' position. Only one switch controls a single incandescent light bulb in the basement. You cannot see the basement light from the attic. You are allowed to manipulate the switches as much as you like, but you can only make one trip down to the basement. How do you identify the correct switch?",
+        options: [
+          { text: "Turn switch 1 on for 10 minutes, turn it off, turn switch 2 on, go down and feel if the bulb is warm.", correct: true },
+          { text: "Turn switches 1 and 2 on, go down, and guess between the two if it is lit.", correct: false },
+          { text: "Leave all switches off. The bulb is Schrödinger's bulb, existing in a superposition of on and off.", correct: false },
+          { text: "Ask a roommate to go down. Delegate tasks to lesser minds.", correct: false }
+        ],
+        successMsg: "Correct! By leaving switch 1 on, the bulb generates thermal dissipation. Feeling the bulb's temperature tells you if switch 1 was the cause, even if it is currently off. Thermodynamics solves what light waves cannot.",
+        failMsg: "Highly illogical. Guessing represents a 50% failure rate. We do not gamble in science. Use thermodynamics!"
+      },
+      {
+        id: 3,
+        title: "The Ship of Theseus Logic",
+        diff: "hard",
+        diffLabel: "Hard Difficulty",
+        xp: 30,
+        pts: 15,
+        text: "A wooden ship has all its planks replaced one by one over decades until no original wood remains. Simultaneously, the old planks are gathered and reassembled into a second ship. Which ship is the original Ship of Theseus?",
+        options: [
+          { text: "Neither. Identity is a psychological construct, not a physical property.", correct: false },
+          { text: "The ship with the replaced planks, since the structural pattern remained continuous.", correct: false },
+          { text: "The ship reassembled from the old planks, since it has material continuity.", correct: false },
+          { text: "Both. It represents a semantic ambiguity of the word 'original' rather than a physical paradox.", correct: true }
+        ],
+        successMsg: "Exquisite. You avoided the category mistake. The paradox is not a mystery of physical laws, but an illustration that the linguistic term 'identity' can refer to either formal configuration or material constitution simultaneously. Precision in terminology is vital.",
+        failMsg: "Incorrect. Selecting one over the other ignores the fundamental linguistic trap of the question. You must audit your cognitive semantic compiler."
+      }
+    ];
+
+    // Facts Database
+    const FACTS = {
+      space: [
+        { text: "Venus is the only planet that rotates clockwise.", expl: "Retrograde rotation means the Sun rises in the west. This is believed to have been caused by a planetary impact.", src: "NASA Space Science Division", imp: "Confirms chaotic solar system formation." },
+        { text: "Neutron stars are so dense that a single teaspoon weighs 6 billion tons.", expl: "A neutron star's gravity is 2 billion times stronger than Earth's due to protons and electrons collapsing into neutrons.", src: "Chandra X-Ray Observatory", imp: "Helps study matter under extreme pressure." },
+        { text: "Space is not a perfect vacuum; it contains 1 atom per cubic centimeter.", expl: "This interstellar medium is incredibly thin, yet it impacts high-velocity spacecraft over long distances.", src: "ESA Research", imp: "Crucial for calculating drag on deep-space probes." }
+      ],
+      physics: [
+        { text: "Light travels 30% slower when passing through water.", expl: "Photons interact with the electromagnetic fields of atoms, causing a delay in propagation, though their speed remains 'c' between collisions.", src: "MIT Electrodynamics", imp: "Explains refraction and allows optical lens designs." },
+        { text: "Time passes faster at the top of a mountain than at sea level.", expl: "According to general relativity, gravity warps spacetime. The weaker the gravity, the faster time passes.", src: "NIST Atomic Clock Experiment", imp: "Must be accounted for in GPS satellite sync calculations." }
+      ],
+      math: [
+        { text: "The Fibonacci sequence appears in sunflower seeds and pinecones.", expl: "This golden ratio alignment allows the maximum number of seeds to pack into a circular area without wasting space.", src: "Royal Mathematical Society", imp: "Demonstrates mathematical optimization in evolutionary biology." },
+        { text: "Prime numbers act as the atoms of arithmetic.", expl: "Every integer greater than 1 is either a prime or can be represented as a unique product of primes.", src: "Euclid's Elements", imp: "The mathematical backbone of modern RSA encryption." }
+      ],
+      tech: [
+        { text: "Quantum bits (qubits) can exist in superpositions of 1 and 0 simultaneously.", expl: "This allows quantum computers to process multiple possibilities at exponential speeds compared to classical silicon chips.", src: "IBM Quantum Division", imp: "Will break traditional encryption within decades." }
+      ],
+      biology: [
+        { text: "Mitochondria were once independent single-celled organisms.", expl: "They merged with other cells in an symbiotic event called endosymbiosis, retaining their own separate mitochondrial DNA.", src: "Journal of Evolutionary Biology", imp: "Explains how complex eukaryotic life evolved on Earth." }
+      ],
+      history: [
+        { text: "The calendar year 1752 was missing 11 entire days.", expl: "Britain and its colonies adopted the Gregorian calendar, jumping from Sept 2 directly to Sept 14 to correct alignment errors.", src: "Royal Observatory", imp: "Shows the integration of astronomical accuracy into civil systems." }
+      ],
+      psych: [
+        { text: "The Dunning-Kruger effect is a cognitive bias of illusory superiority.", expl: "People with low ability at a task overestimate their competence, lacking the metadata skills to recognize their own errors.", src: "Cornell Research Journal", imp: "Alerts engineers to avoid hubris when designing critical components." }
+      ]
+    };
+
+    // App State Configuration
+    let state = {
+      section: 'dashboard',
+      xp: 20,
+      level: 'Curious Mind',
+      score: 10,
+      streak: 1,
+      currentPuzzleIdx: 0,
+      currentFactCategory: 'space',
+      speechSynthesisActive: false,
+      speechUtterance: null,
+      vault: []
+    };
+
+    // Initialization
+    window.addEventListener('load', () => {
+      initParticles();
+      initAvatar();
+      loadState();
+      updateProfileDisplay();
+      setupMenu();
+      generateLecture();
+      generateRandomFact();
+      loadPuzzle(0);
+      renderVaultGrid();
+      
+      // Setup Lucide icons
+      lucide.createIcons();
+    });
+
+    // Local Storage Persistence
+    function saveState() {
+      localStorage.setItem('ai_sheldon_state', JSON.stringify({
+        xp: state.xp,
+        level: state.level,
+        score: state.score,
+        streak: state.streak,
+        vault: state.vault
+      }));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('ai_sheldon_state');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state.xp = parsed.xp || 20;
+          state.level = parsed.level || 'Curious Mind';
+          state.score = parsed.score || 10;
+          state.streak = parsed.streak || 1;
+          state.vault = parsed.vault || [];
+        } catch (e) {
+          console.error("Error loading local state:", e);
+        }
+      }
+    }
+
+    // Level Mapping based on XP thresholds
+    function updateXP(amount) {
+      state.xp += amount;
+      state.score += amount / 2;
+      
+      // Thresholds: CM (0-99), Thinker (100-249), Analyst (250-499), Scientist (500-799), Genius (800-1499), Nobel Candidate (1500+)
+      if (state.xp >= 1500) {
+        state.level = 'Nobel Candidate';
+        document.getElementById('ach-level-6').classList.remove('locked');
+        document.getElementById('ach-level-6').classList.add('unlocked');
+      } else if (state.xp >= 800) {
+        state.level = 'Genius';
+        document.getElementById('ach-level-6').classList.remove('locked');
+        document.getElementById('ach-level-6').classList.add('unlocked');
+      } else if (state.xp >= 500) {
+        state.level = 'Scientist';
+      } else if (state.xp >= 250) {
+        state.level = 'Analyst';
+        document.getElementById('ach-level-3').classList.remove('locked');
+        document.getElementById('ach-level-3').classList.add('unlocked');
+      } else if (state.xp >= 100) {
+        state.level = 'Thinker';
+        document.getElementById('ach-level-2').classList.remove('locked');
+        document.getElementById('ach-level-2').classList.add('unlocked');
+      }
+      
+      updateProfileDisplay();
+      saveState();
+    }
+
+    function updateProfileDisplay() {
+      document.getElementById('profile-level').innerText = state.level;
+      document.getElementById('profile-score').innerText = state.score + " Pts";
+      document.getElementById('profile-streak').innerText = state.streak + " Day" + (state.streak > 1 ? "s" : "");
+      
+      // Calculate XP thresholds for progress bar
+      let minXp = 0;
+      let maxXp = 100;
+      let curLvlNum = 1;
+      
+      if (state.level === 'Thinker') { minXp = 100; maxXp = 250; curLvlNum = 2; }
+      else if (state.level === 'Analyst') { minXp = 250; maxXp = 500; curLvlNum = 3; }
+      else if (state.level === 'Scientist') { minXp = 500; maxXp = 800; curLvlNum = 4; }
+      else if (state.level === 'Genius') { minXp = 800; maxXp = 1500; curLvlNum = 5; }
+      else if (state.level === 'Nobel Candidate') { minXp = 1500; maxXp = 3000; curLvlNum = 6; }
+      
+      const progressPercent = Math.min(100, Math.max(5, ((state.xp - minXp) / (maxXp - minXp)) * 100));
+      document.getElementById('profile-xp-bar').style.width = progressPercent + "%";
+      document.getElementById('profile-xp-text').innerText = `${state.xp} / ${maxXp} XP`;
+      
+      // Avatar initials
+      const initials = state.level.split(' ').map(n => n[0]).join('');
+      document.getElementById('profile-avatar').innerText = initials;
+    }
+
+    // Sidebar navigation trigger
+    function setupMenu() {
+      const items = document.querySelectorAll('.nav-item');
+      items.forEach(item => {
+        item.addEventListener('click', () => {
+          items.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          const sec = item.getAttribute('data-section');
+          switchSection(sec);
+          
+          // Collapse mobile menu if open
+          if (window.innerWidth <= 768) {
+            document.getElementById('sidebar-nav').classList.remove('mobile-show');
+          }
+        });
+      });
+
+      document.getElementById('menu-toggle').addEventListener('click', () => {
+        document.getElementById('sidebar-nav').classList.toggle('mobile-show');
+      });
+    }
+
+    function switchSection(secName) {
+      const sections = document.querySelectorAll('.section');
+      sections.forEach(s => s.classList.remove('active'));
+      
+      const target = document.getElementById('section-' + secName);
+      if (target) {
+        target.classList.add('active');
+        state.section = secName;
+        
+        // Update Title Display
+        let title = "Futuristic Laboratory";
+        let desc = "Central analytical dashboard.";
+        
+        switch(secName) {
+          case 'dashboard':
+            title = "Futuristic Laboratory Dashboard";
+            desc = "Central operational center for logic auditing.";
+            break;
+          case 'chat':
+            title = "Interactive Mentor Chat";
+            desc = "Challenge premises with Dr. Logic. Do not expect comfort.";
+            break;
+          case 'evaluator':
+            title = "Idea Evaluation Engine";
+            desc = "Rebranded: AI Sheldon. Think before you spend capital.";
+            break;
+          case 'lecture':
+            title = "Deep Intellectual Lectures";
+            desc = "Advanced structured briefings on mathematical and physical concepts.";
+            break;
+          case 'debate':
+            title = "Thesis Debate Chamber";
+            desc = "Analyze multi-variable claims and see direct logical counters.";
+            break;
+          case 'fact':
+            title = "Scientific Fact Generator";
+            desc = "Explore curated empirical facts with sources and structural impact.";
+            break;
+          case 'challenge':
+            title = "Logic Challenge Arena";
+            desc = "Solve riddles, prove your logic, and elevate your rank.";
+            break;
+          case 'vault':
+            title = "Personal Knowledge Vault";
+            desc = "Saved items, evaluations, facts, and lecture transcripts.";
+            break;
+        }
+        
+        document.getElementById('section-title').innerText = title;
+        document.getElementById('section-desc').innerText = desc;
+      }
+    }
+
+    // Particle Background System (HTML Canvas)
+    function initParticles() {
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      class Particle {
+        constructor() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 2 + 0.5;
+          this.speedX = Math.random() * 0.4 - 0.2;
+          this.speedY = Math.random() * 0.4 - 0.2;
+          this.alpha = Math.random() * 0.5 + 0.1;
+        }
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+          if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        }
+        draw() {
+          ctx.save();
+          ctx.globalAlpha = this.alpha;
+          ctx.fillStyle = '#00f0ff';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      for (let i = 0; i < 60; i++) {
+        particles.push(new Particle());
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.update();
+          p.draw();
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    // Canvas Avatar Visualizer
+    function initAvatar() {
+      const canvas = document.getElementById('avatar-canvas');
+      const ctx = canvas.getContext('2d');
+      let angle = 0;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        // Outer Ring 1
+        ctx.rotate(angle);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 100, 35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Orbiting Node 1
+        ctx.fillStyle = '#00f0ff';
+        ctx.beginPath();
+        ctx.arc(100 * Math.cos(angle * 2), 35 * Math.sin(angle * 2), 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer Ring 2
+        ctx.rotate(Math.PI / 3);
+        ctx.strokeStyle = 'rgba(189, 0, 255, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 100, 35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Orbiting Node 2
+        ctx.fillStyle = '#bd00ff';
+        ctx.beginPath();
+        ctx.arc(100 * Math.cos(angle * 1.5), 35 * Math.sin(angle * 1.5), 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer Ring 3
+        ctx.rotate(Math.PI / 3);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 100, 35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Speed depends on speaking state
+        if (state.speechSynthesisActive) {
+          angle += 0.05; // Pulse faster when speaking
+          document.getElementById('avatar-status').innerText = "Synthesizing...";
+          document.getElementById('avatar-status').style.color = "#39ff14";
+        } else {
+          angle += 0.008; // Normal slow rotation
+          document.getElementById('avatar-status').innerText = "Logic Core Active";
+          document.getElementById('avatar-status').style.color = "#00f0ff";
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      draw();
+    }
+
+    // --- easter egg ---
+    function triggerEasterEgg() {
+      const sQuotes = [
+        "Bazinga! You fell victim to another one of my classic practical jokes.",
+        "Scissors cuts paper, paper covers rock, rock crushes lizard, lizard poisons Spock, Spock smashes scissors...",
+        "I'm not crazy. My mother had me tested.",
+        "A slide presentation? Excellent. Lesser minds learn better with visual aids.",
+        "That is my spot. In an ever-changing world, it is the single point of consistency."
+      ];
+      const q = sQuotes[Math.floor(Math.random() * sQuotes.length)];
+      alert("Dr. Logic says: \n\n\"" + q + "\"");
+      updateXP(5);
+    }
+
+    // --- 2. CHAT LOGIC ---
+    function handleChatKeyPress(e) {
+      if (e.key === 'Enter') {
+        sendMessageToSheldon();
+      }
+    }
+
+    function sendMessageToSheldon() {
+      const input = document.getElementById('chat-input-field');
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Add user message
+      appendMessage('user', text);
+      input.value = '';
+
+      // Generate Sheldon response
+      setTimeout(() => {
+        let sheldonReply = generateSheldonResponse(text);
+        appendMessage('sheldon', sheldonReply);
+        // Play TTS if speaker is idle
+        if (window.speechSynthesis) {
+          speakText(sheldonReply);
+        }
+      }, 700);
+    }
+
+    function appendMessage(sender, text) {
+      const chatMessages = document.getElementById('chat-messages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${sender}`;
+      
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+
+      msgDiv.innerHTML = `
+        <div class="msg-avatar">${sender === 'user' ? 'U' : 'S'}</div>
+        <div>
+          <div class="msg-content">${text}</div>
+          <div class="message-meta">${sender === 'user' ? 'You' : 'Dr. Logic'} • ${timeStr}</div>
+        </div>
+      `;
+
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function generateSheldonResponse(userText) {
+      const t = userText.toLowerCase();
+      
+      if (t.includes('flying taxi') || t.includes('flying car')) {
+        return "Interesting. However, before investing liquid assets, let us evaluate whether battery energy density thresholds (currently capped near 260 Wh/kg), consumer trust metrics, municipal sonic boom regulations, and airspace congestion protocols are prepared for such a venture. In short: It is a capital bonfire.";
+      }
+      if (t.includes('replace') && t.includes('jobs')) {
+        return "The hypothesis that 'AI will replace all jobs' ignores historical labor mechanics. It does not replace labor; it shifts the cognitive complexity threshold. Those who do not understand algorithmic optimization will be replaced by those who do. The threat is not the metal, it is the user.";
+      }
+      if (t.includes('quantum') || t.includes('physics')) {
+        return "Ah, quantum mechanics. You are likely referring to superposition, where a state remains undefined until collapsed by measurement. Let us not confuse this with philosophical subjectivity. The math is absolute; your understanding of it is what fluctuates.";
+      }
+      if (t.includes('hello') || t.includes('hi')) {
+        return "Salutations. I have allocated exactly 1.2% of my CPU subroutines to answer your query. What logical problem requires sorting?";
+      }
+      if (t.includes('crypto') || t.includes('bitcoin') || t.includes('blockchain')) {
+        return "A decentralized ledger utilizing SHA-256 hashing. While cryptographically sound, its valuation relies entirely on the Greater Fool Theory. You are attempting to trade digital consensus parameters for real-world purchasing power. It is mathematically fascinating, but economically hilarious.";
+      }
+      
+      const defaultReplies = [
+        "Your premise is based on a cognitive bias. Explain the underlying mechanics of how your proposal bypasses the Second Law of Thermodynamics.",
+        "Interesting assertion. However, let us break down the variables. If we run a regression analysis on your historical inputs, the confidence interval of success lies somewhere near zero.",
+        "I am listening. Or, more accurately, I am monitoring the textual stream. Please provide structural evidence instead of emotional conjecture.",
+        "That is one perspective. The incorrect one, obviously. Let me explain the orbital math behind why that statement is false."
+      ];
+      return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
+    }
+
+    // --- 3. EVALUATION ENGINE LOGIC ---
+    function runIdeaEvaluation() {
+      const title = document.getElementById('idea-title').value.trim();
+      const desc = document.getElementById('idea-desc').value.trim();
+      const cat = document.getElementById('idea-category').value;
+      const brutal = document.getElementById('idea-brutal-mode').checked;
+
+      if (!title || !desc) {
+        alert("Please enter both a Concept Title and a Technical Description.");
+        return;
+      }
+
+      document.getElementById('eval-placeholder').style.display = 'none';
+      document.getElementById('eval-results').style.display = 'none';
+      document.getElementById('eval-loading').style.display = 'flex';
+
+      const steps = [
+        "Parsing material science equations...",
+        "Checking energy density equations...",
+        "Executing SWOT market matrix logic...",
+        "Applying Dr. Logic's Brutal Honesty coefficient...",
+        "Formulating final logical verdict..."
+      ];
+
+      let stepIdx = 0;
+      const interval = setInterval(() => {
+        if (stepIdx < steps.length) {
+          document.getElementById('loading-step-text').innerText = steps[stepIdx];
+          stepIdx++;
+        } else {
+          clearInterval(interval);
+          displayEvaluationResults(title, desc, cat, brutal);
+        }
+      }, 700);
+    }
+
+    let activeEvalReport = null; // Temp holder for vault storage
+
+    function displayEvaluationResults(title, desc, cat, brutal) {
+      document.getElementById('eval-loading').style.display = 'none';
+      document.getElementById('eval-results').style.display = 'flex';
+
+      // Mock Score Formulas based on text contents
+      let feas = Math.max(10, Math.min(95, Math.floor(Math.random() * 40) + 15));
+      let innov = Math.max(30, Math.min(98, Math.floor(Math.random() * 50) + 40));
+      let mkt = Math.max(15, Math.min(90, Math.floor(Math.random() * 50) + 20));
+      let comp = Math.max(50, Math.min(99, Math.floor(Math.random() * 40) + 55)); // Typically high complexity
+
+      if (!brutal) {
+        // Soften slightly
+        feas += 15;
+        mkt += 10;
+      }
+
+      // Render Scores
+      animateScoreCircle('score-feasibility', 'score-feasibility-txt', feas);
+      animateScoreCircle('score-innovation', 'score-innovation-txt', innov);
+      animateScoreCircle('score-market', 'score-market-txt', mkt);
+      animateScoreCircle('score-complexity', 'score-complexity-txt', comp);
+
+      document.getElementById('results-title-text').innerText = `Evaluation Report: ${title}`;
+      document.getElementById('results-meta-text').innerText = `${cat.toUpperCase()} DOMAIN • TIMESTAMP: ${new Date().toLocaleTimeString()}`;
+
+      // Verdict Builder
+      const verdictCard = document.getElementById('results-verdict-card');
+      const verdictHeader = document.getElementById('verdict-header-text');
+      const verdictText = document.getElementById('results-verdict-text');
+      const vIcon = document.getElementById('verdict-icon');
+
+      let verdictVal = "";
+      let headerVal = "";
+
+      if (brutal) {
+        verdictCard.classList.add('brutally-honest');
+        vIcon.setAttribute('data-lucide', 'shield-alert');
+        headerVal = "VERDICT: CRITICAL LOGICAL INSOLVENCY";
+        verdictVal = `Your concept, "${title}", violates the base rules of economic scale and thermodynamic efficiency. Specifically, your plan to "${desc.slice(0, 100)}..." is highly dependent on ideal parameters that do not exist. To make this feasible, you must remove the human-in-the-loop dependencies and focus strictly on scaling the core computational framework. Ratings indicate a ${feas}% chance of ever clearing engineering gates.`;
+      } else {
+        verdictCard.classList.remove('brutally-honest');
+        vIcon.setAttribute('data-lucide', 'check-circle-2');
+        headerVal = "VERDICT: RECONSTRUCTIVE VIABILITY POSSIBLE";
+        verdictVal = `The concept holds mild theoretical value. However, the complexity ratio (${comp}%) exceeds safe parameters. If you pivot the architecture to utilize pre-existing cloud micro-services rather than building custom silicon, you might reduce capital burns. Recommend Proceeding with extreme caution.`;
+      }
+      
+      verdictHeader.innerText = headerVal;
+      verdictText.innerText = verdictVal;
+      lucide.createIcons();
+
+      // SWOT lists
+      const swot_s = document.getElementById('results-swot-s');
+      const swot_w = document.getElementById('results-swot-w');
+      const swot_o = document.getElementById('results-swot-o');
+      const swot_t = document.getElementById('results-swot-t');
+
+      swot_s.innerHTML = `<li>Novel approach to ${cat} mechanisms.</li><li>High initial intellectual asset value.</li>`;
+      swot_w.innerHTML = `<li>Requires immense initial capitalization.</li><li>Extremely high ${comp}% complexity coefficient.</li>`;
+      swot_o.innerHTML = `<li>First-mover advantage in niche sub-sectors.</li><li>Licensing models for regional infrastructure.</li>`;
+      swot_t.innerHTML = `<li>Fast regulation freezes on pilot models.</li><li>Established legacy competitors have cheaper margins.</li>`;
+
+      // Failure Points & Improvements
+      const fails = document.getElementById('results-failures');
+      const imps = document.getElementById('results-improvements');
+
+      fails.innerHTML = `
+        <li>Systemic failure under high physical or network load stresses.</li>
+        <li>Consumer trust breaks during early pilot anomalies.</li>
+      `;
+      imps.innerHTML = `
+        <li>Decouple the complex dependencies: simplify storage arrays.</li>
+        <li>Submit structural patents before showcasing to venture capital.</li>
+      `;
+
+      // Store in memory for saving
+      activeEvalReport = {
+        title: title,
+        desc: desc,
+        cat: cat,
+        verdict: verdictVal,
+        feas: feas,
+        innov: innov,
+        mkt: mkt,
+        comp: comp
+      };
+
+      updateXP(25); // Reward user for evaluating ideas
+    }
+
+    function animateScoreCircle(elementId, textId, score) {
+      const circle = document.getElementById(elementId);
+      const text = document.getElementById(textId);
+      const r = circle.r.baseVal.value;
+      const circumference = 2 * Math.PI * r;
+      
+      circle.style.strokeDasharray = circumference;
+      
+      let count = 0;
+      const timer = setInterval(() => {
+        if (count >= score) {
+          clearInterval(timer);
+        } else {
+          count++;
+          text.innerText = count;
+          const offset = circumference - (count / 100) * circumference;
+          circle.style.strokeDashoffset = offset;
+        }
+      }, 10);
+    }
+
+    function saveEvaluationToVault() {
+      if (!activeEvalReport) return;
+
+      const item = {
+        id: Date.now(),
+        type: 'evaluation',
+        title: `Audit: ${activeEvalReport.title}`,
+        content: activeEvalReport.verdict,
+        preview: `Feasibility: ${activeEvalReport.feas}% | Innovation: ${activeEvalReport.innov}%`,
+        tags: [activeEvalReport.cat, 'Audit'],
+        date: new Date().toLocaleDateString()
+      };
+
+      state.vault.push(item);
+      saveState();
+      renderVaultGrid();
+      alert("Evaluation Report successfully synced to the Knowledge Vault.");
+    }
+
+    // --- 4. LECTURE & PODCAST ENGINE ---
+    const LECTURES = {
+      quantum: {
+        title: "Quantum Entanglement & Superposition Coherence",
+        metaTopic: "QUANTUM MECHANICS",
+        body: `
+          <h3>1. The Copenhagen vs. Many-Worlds Paradigms</h3>
+          <p>Quantum superposition dictates that a physical system exists in all theoretical states simultaneously until collapsed by measurement. Schrödinger's famous thought experiment was not a description of biology, but an illustration of the absurdity when quantum parameters are mapped to macroscopic realities.</p>
+          <h3>2. Entanglement Entropy</h3>
+          <p>When two particles are entangled, their quantum states are shared. Measuring particle A instantly defines the state of particle B, regardless of light-year distance. Einstein referred to this as 'spooky action at a distance' (spukhafte Fernwirkung), preferring a hidden-variables theory which Bell's Inequality subsequently disproved.</p>
+          <h3>3. Quantum Cryptographic Gates</h3>
+          <p>By using qubits that exist in state superpositions, algorithms like Shor's can factor prime integers exponentially faster than classical silicon registers. This will make all modern RSA encryption algorithms obsolete within years.</p>
+          <h3>4. Common Misconceptions</h3>
+          <p>Superposition does not mean the particle is spinning in both directions. It means it is in a state of probability vectors until interacting with an external wave function collapse.</p>
+        `,
+        audioText: "Quantum superposition dictates that a physical system exists in all theoretical states simultaneously until collapsed by measurement. Schrödinger's famous thought experiment was not a description of biology, but an illustration of the absurdity when quantum parameters are mapped to macroscopic realities. When two particles are entangled, their quantum states are shared. Measuring particle A instantly defines the state of particle B. Einstein referred to this as spooky action at a distance."
+      },
+      complexity: {
+        title: "Turing Machines and Big-O Complexity Thresholds",
+        metaTopic: "COMPUTER SCIENCE",
+        body: `
+          <h3>1. Algorithmic Scale Coefficients</h3>
+          <p>Big-O notation describes the limiting behavior of a function when the argument tends towards infinity. It is the absolute tool for evaluating system efficiency. If your code uses nested loops causing O(N²) calculations, it will inevitably crash under production parameters.</p>
+          <h3>2. The Halting Problem</h3>
+          <p>Alan Turing mathematically proved that it is impossible to write a general algorithm that can determine whether any arbitrary program will finish running or run forever. This defines the absolute boundaries of what computers can calculate.</p>
+          <h3>3. P vs NP Complexity</h3>
+          <p>Can every problem whose solution can be quickly verified also be solved quickly? This remains the greatest open mystery in computer science. If P equals NP, global encryption breaks overnight.</p>
+        `,
+        audioText: "Big-O notation describes the limiting behavior of a function when the argument tends towards infinity. It is the absolute tool for evaluating system efficiency. If your code uses nested loops causing O N squared calculations, it will inevitably crash under production parameters. Alan Turing mathematically proved that it is impossible to write a general algorithm that can determine whether any arbitrary program will finish running or run forever."
+      },
+      blackhole: {
+        title: "Singularity Horizons and Hawking Radiation Theory",
+        metaTopic: "ASTROPHYSICS",
+        body: `
+          <h3>1. Event Horizon Mechanics</h3>
+          <p>The event horizon is the boundary surrounding a black hole where the escape velocity exceeds the speed of light. Nothing, not even electromagnetic radiation, can escape its gravitational field once crossing this threshold.</p>
+          <h3>2. Quantum Particle Splitting</h3>
+          <p>Stephen Hawking proved that black holes are not completely black. Near the event horizon, virtual particle-antiparticle pairs constantly form. Occasionally, one falls in while the other escapes, resulting in Hawking Radiation and eventual black hole evaporation.</p>
+          <h3>3. Information Paradox</h3>
+          <p>If a black hole evaporates, what happens to the physical information of the matter that fell in? Quantum mechanics states information cannot be destroyed; relativity states it is lost. This remains a major theoretical conflict.</p>
+        `,
+        audioText: "The event horizon is the boundary surrounding a black hole where the escape velocity exceeds the speed of light. Nothing, not even electromagnetic radiation, can escape its gravitational field once crossing this threshold. Stephen Hawking proved that black holes are not completely black. Near the event horizon, virtual particle-antiparticle pairs constantly form."
+      },
+      psych: {
+        title: "Cognitive Dissonance and Heuristic Decision Bias",
+        metaTopic: "BEHAVIORAL SCIENCE",
+        body: `
+          <h3>1. Systematic Errors in Human Processing</h3>
+          <p>Human brains do not operate on clean logic gates. Instead, they rely on heuristics—shortcuts that trade mathematical precision for processing speed. This leads to systematic errors known as cognitive biases.</p>
+          <h3>2. Confirmation Bias</h3>
+          <p>The human mind naturally filters and prioritizes data that matches its existing beliefs while discarding counter-evidence. This is a severe failure mode in scientific research and engineering stress-testing.</p>
+          <h3>3. Cognitive Dissonance</h3>
+          <p>When confronted with facts that clash with core beliefs, the human brain experiences physical discomfort. Instead of adapting the belief, it often fabricates irrational justifications. This is why logical arguments often fail to convince dogmatic minds.</p>
+        `,
+        audioText: "Human brains do not operate on clean logic gates. Instead, they rely on heuristics—cognitive shortcuts that trade mathematical precision for processing speed. This leads to systematic errors known as cognitive biases. The human mind naturally filters and prioritizes data that matches its existing beliefs while discarding counter-evidence."
+      }
+    };
+
+    let activeLectureData = null;
+
+    function generateLecture() {
+      const topic = document.getElementById('lecture-topic').value;
+      const lvl = document.getElementById('lecture-level').value;
+      const dur = document.getElementById('lecture-duration').value;
+
+      const data = LECTURES[topic];
+      if (!data) return;
+
+      document.getElementById('lecture-meta-topic').innerText = data.metaTopic;
+      document.getElementById('lecture-meta-level').innerText = lvl.toUpperCase() + " LEVEL";
+      document.getElementById('lecture-meta-dur').innerText = dur + " MIN LECTURE";
+      
+      document.getElementById('lecture-title-text').innerText = data.title;
+      document.getElementById('lecture-body-content').innerHTML = data.body;
+
+      // Update podcast player details
+      document.getElementById('podcast-title-txt').innerText = data.title;
+      document.getElementById('player-time-total').innerText = `${dur}:00`;
+
+      activeLectureData = {
+        title: data.title,
+        content: data.body,
+        audioText: data.audioText,
+        topic: data.metaTopic,
+        level: lvl,
+        duration: dur
+      };
+
+      // Reset audio if playing
+      if (state.speechSynthesisActive) {
+        toggleAudioPlayback();
+      }
+    }
+
+    function saveLectureToVault() {
+      if (!activeLectureData) return;
+
+      const item = {
+        id: Date.now(),
+        type: 'lecture',
+        title: activeLectureData.title,
+        content: activeLectureData.content,
+        preview: `${activeLectureData.level.toUpperCase()} | ${activeLectureData.duration} Mins`,
+        tags: [activeLectureData.topic, 'Lecture'],
+        date: new Date().toLocaleDateString()
+      };
+
+      state.vault.push(item);
+      saveState();
+      renderVaultGrid();
+      alert("Lecture Outline successfully synced to the Knowledge Vault.");
+    }
+
+    // --- 4b. PODCAST PLAYER / TEXT-TO-SPEECH (TTS) ---
+    let speechTimer = null;
+    let speechProgress = 0;
+
+    function toggleAudioPlayback() {
+      if (!window.speechSynthesis) {
+        alert("Text-to-speech is not supported in your browser.");
+        return;
+      }
+
+      const pBtn = document.getElementById('play-pause-btn');
+      const wave = document.getElementById('wave-vis');
+
+      if (state.speechSynthesisActive) {
+        // Pause
+        speechSynthesis.cancel();
+        state.speechSynthesisActive = false;
+        pBtn.innerHTML = '<i data-lucide="play" class="logo-icon" style="color:#050814;"></i>';
+        wave.classList.remove('playing');
+        clearInterval(speechTimer);
+      } else {
+        // Play
+        state.speechSynthesisActive = true;
+        pBtn.innerHTML = '<i data-lucide="pause" class="logo-icon" style="color:#050814;"></i>';
+        wave.classList.add('playing');
+
+        const textToSpeak = activeLectureData ? activeLectureData.audioText : "No content loaded.";
+        state.speechUtterance = new SpeechSynthesisUtterance(textToSpeak);
+        
+        // Voice Selection
+        const voiceType = document.getElementById('player-voice').value;
+        const voices = speechSynthesis.getVoices();
+        
+        // Find standard English voice
+        let selectedVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google'));
+        if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('en'));
+        if (selectedVoice) state.speechUtterance.voice = selectedVoice;
+
+        // Pitch & Rate tuning
+        updateSpeechRate();
+
+        state.speechUtterance.onend = () => {
+          state.speechSynthesisActive = false;
+          pBtn.innerHTML = '<i data-lucide="play" class="logo-icon" style="color:#050814;"></i>';
+          wave.classList.remove('playing');
+          clearInterval(speechTimer);
+          document.getElementById('player-progress-fill').style.width = '100%';
+          updateXP(30); // XP for listening to lectures
+        };
+
+        speechSynthesis.speak(state.speechUtterance);
+
+        // Progress bar simulation
+        speechProgress = 0;
+        const durSecs = parseInt(activeLectureData.duration) * 60;
+        
+        speechTimer = setInterval(() => {
+          speechProgress += 2 * parseFloat(document.getElementById('player-speed').value);
+          const percent = Math.min(100, (speechProgress / durSecs) * 100);
+          document.getElementById('player-progress-fill').style.width = percent + "%";
+          
+          // Format current time
+          const mins = Math.floor(speechProgress / 60);
+          const secs = Math.floor(speechProgress % 60);
+          document.getElementById('player-time-current').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+          if (percent >= 100) {
+            clearInterval(speechTimer);
+          }
+        }, 1000);
+      }
+      lucide.createIcons();
+    }
+
+    function updateSpeechRate() {
+      if (!state.speechUtterance) return;
+      const speed = parseFloat(document.getElementById('player-speed').value);
+      state.speechUtterance.rate = speed;
+      
+      const voiceType = document.getElementById('player-voice').value;
+      if (voiceType === 'sheldon') {
+        state.speechUtterance.pitch = 1.25; // Sarcastic/Fast high pitch
+      } else if (voiceType === 'professor') {
+        state.speechUtterance.pitch = 0.8; // Deep authoritative pitch
+      } else {
+        state.speechUtterance.pitch = 1.0;
+      }
+    }
+
+    function skipAudio(seconds) {
+      speechProgress = Math.max(0, speechProgress + seconds);
+      const durSecs = parseInt(activeLectureData.duration) * 60;
+      const percent = Math.min(100, (speechProgress / durSecs) * 100);
+      document.getElementById('player-progress-fill').style.width = percent + "%";
+    }
+
+    function seekAudio(e) {
+      const bar = document.getElementById('player-progress-bg');
+      const rect = bar.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percent = clickX / rect.width;
+      
+      const durSecs = parseInt(activeLectureData.duration) * 60;
+      speechProgress = percent * durSecs;
+      document.getElementById('player-progress-fill').style.width = (percent * 100) + "%";
+    }
+
+    // --- 5. DEBATE LOGIC ---
+    function handleDebateKeyPress(e) {
+      if (e.key === 'Enter') {
+        initiateDebate();
+      }
+    }
+
+    function initiateDebate() {
+      const input = document.getElementById('debate-input-field');
+      const text = input.value.trim();
+      if (!text) return;
+
+      document.getElementById('debate-results').style.display = 'grid';
+
+      const proBox = document.getElementById('debate-pro-text');
+      const conBox = document.getElementById('debate-con-text');
+      const conclusionBox = document.getElementById('debate-conclusion-text');
+
+      // Simple response routing
+      if (text.toLowerCase().includes('mars') || text.toLowerCase().includes('space')) {
+        proBox.innerHTML = `
+          <p><strong>1. Species Redundancy:</strong> Earth faces existential risks (nuclear war, asteroid impacts). Establishing a multi-planetary framework guarantees the continuity of human consciousness.</p>
+          <p><strong>2. Spin-Off Technologies:</strong> Closed-loop recycling, water purification, and radiation shielding engineered for Mars will solve critical resource shortages on Earth.</p>
+        `;
+        conBox.innerHTML = `
+          <p><strong>1. Severe Capital Allocation Inefficiencies:</strong> Spending trillions on a cold, radiation-blasted rock is logically inferior to preserving a biological biosphere that already sustains us.</p>
+          <p><strong>2. Physiological Realities:</strong> Long-term microgravity and solar radiation cause severe DNA damage and muscular atrophy. The human frame is not designed for Mars.</p>
+        `;
+        conclusionBox.innerText = "Deduction: Mars colonization is not a luxury; it is insurance. However, doing so before solving closed-loop life support engineering is equivalent to throwing capital into a cosmic vacuum. Fix Earth's orbit dynamics first.";
+      } else {
+        // Generic fallback
+        proBox.innerHTML = `
+          <p><strong>1. Cognitive Optimization:</strong> The thesis represents a potential reduction in systemic friction, allowing automation of low-level variables.</p>
+          <p><strong>2. Structural Growth:</strong> Historically, shifting resources to higher-value intellectual outputs yields positive net growth.</p>
+        `;
+        conBox.innerHTML = `
+          <p><strong>1. Edge Case Fragility:</strong> Removing human buffers leaves the system highly vulnerable to black-swan errors that algorithms cannot parse.</p>
+          <p><strong>2. Distributional Thermodynamics:</strong> Energy costs required to power complete system replacement exceed classical utility boundaries.</p>
+        `;
+        conclusionBox.innerText = `Synthesis: Your thesis, "${text}", is highly subjective. While logically valid under narrow assumptions, it collapses when subjected to real-world chaos variables. Recommend structural remodeling.`;
+      }
+
+      updateXP(15);
+    }
+
+    // --- 6. FACT GENERATOR LOGIC ---
+    function loadFactCategory(cat) {
+      state.currentFactCategory = cat;
+      
+      const btns = document.querySelectorAll('.cat-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      
+      // Find the clicked button and make it active
+      event.target.classList.add('active');
+      
+      generateRandomFact();
+    }
+
+    let activeFact = null;
+
+    function generateRandomFact() {
+      const list = FACTS[state.currentFactCategory] || FACTS.space;
+      const item = list[Math.floor(Math.random() * list.length)];
+
+      document.getElementById('fact-tag-text').innerText = `${state.currentFactCategory.toUpperCase()} SCIENCES`;
+      document.getElementById('fact-content-text').innerText = item.text;
+      document.getElementById('fact-expl-text').innerText = item.expl;
+      document.getElementById('fact-source-text').innerText = item.src;
+      document.getElementById('fact-importance-text').innerText = item.imp;
+
+      activeFact = item;
+    }
+
+    function saveFactToVault() {
+      if (!activeFact) return;
+
+      const item = {
+        id: Date.now(),
+        type: 'fact',
+        title: `Fact: ${activeFact.text.slice(0, 30)}...`,
+        content: activeFact.expl,
+        preview: activeFact.text,
+        tags: [state.currentFactCategory, 'Fact'],
+        date: new Date().toLocaleDateString()
+      };
+
+      state.vault.push(item);
+      saveState();
+      renderVaultGrid();
+      alert("Fact successfully pinned to the Knowledge Vault.");
+    }
+
+    // --- 7. PUZZLE ARENA LOGIC ---
+    function loadPuzzle(idx) {
+      if (idx >= PUZZLES.length) {
+        idx = 0; // Wrap around
+      }
+      state.currentPuzzleIdx = idx;
+      const p = PUZZLES[idx];
+
+      document.getElementById('puzzle-diff-badge').innerText = p.diffLabel;
+      document.getElementById('puzzle-diff-badge').className = `puzzle-difficulty ${p.diff}`;
+      document.getElementById('puzzle-xp-badge').innerText = `+${p.xp} XP • +${p.pts} Pts`;
+      document.getElementById('puzzle-title-txt').innerText = p.title;
+      document.getElementById('puzzle-body-txt').innerText = p.text;
+
+      // Render options
+      const optContainer = document.getElementById('puzzle-options-container');
+      optContainer.innerHTML = '';
+
+      p.options.forEach((opt, oIdx) => {
+        const marker = String.fromCharCode(65 + oIdx); // A, B, C, D
+        const optDiv = document.createElement('div');
+        optDiv.className = 'puzzle-option';
+        optDiv.onclick = () => selectPuzzleOption(oIdx);
+        optDiv.innerHTML = `
+          <div class="puzzle-option-marker">${marker}</div>
+          <span>${opt.text}</span>
+        `;
+        optContainer.appendChild(optDiv);
+      });
+
+      // Reset feedback cards
+      document.getElementById('puzzle-feedback-card').style.display = 'none';
+      document.getElementById('next-puzzle-btn').style.display = 'none';
+    }
+
+    function selectPuzzleOption(optIdx) {
+      const p = PUZZLES[state.currentPuzzleIdx];
+      const opts = document.querySelectorAll('.puzzle-option');
+      
+      // Remove classes
+      opts.forEach(o => {
+        o.classList.remove('selected', 'correct', 'incorrect');
+      });
+
+      const selectedOpt = opts[optIdx];
+      selectedOpt.classList.add('selected');
+
+      const isCorrect = p.options[optIdx].correct;
+      const feedback = document.getElementById('puzzle-feedback-card');
+      const fTitle = document.getElementById('puzzle-feedback-title-txt');
+      const fDesc = document.getElementById('puzzle-feedback-desc-txt');
+
+      if (isCorrect) {
+        selectedOpt.classList.add('correct');
+        feedback.className = "puzzle-feedback success";
+        fTitle.innerText = "LOGICAL EQUILIBRIUM RESOLVED";
+        fDesc.innerText = p.successMsg;
+        document.getElementById('next-puzzle-btn').style.display = 'inline-flex';
+        updateXP(p.xp);
+      } else {
+        selectedOpt.classList.add('incorrect');
+        feedback.className = "puzzle-feedback fail";
+        fTitle.innerText = "AUDIT FAILED: SYSTEM DECOHERENCE";
+        fDesc.innerText = p.failMsg;
+      }
+      feedback.style.display = 'block';
+    }
+
+    function loadNextPuzzle() {
+      loadPuzzle(state.currentPuzzleIdx + 1);
+    }
+
+    // --- 8. KNOWLEDGE VAULT ENGINE ---
+    function renderVaultGrid() {
+      const grid = document.getElementById('vault-grid-container');
+      const searchVal = document.getElementById('vault-search-field').value.toLowerCase();
+      grid.innerHTML = '';
+
+      const filtered = state.vault.filter(item => {
+        return item.title.toLowerCase().includes(searchVal) ||
+               item.content.toLowerCase().includes(searchVal) ||
+               item.tags.some(t => t.toLowerCase().includes(searchVal));
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-vault-state">
+            <i data-lucide="archive-x"></i>
+            <h4>No Records Retrieved</h4>
+            <p>Your search returned 0 items. Save lectures, facts, or evaluations to view them here.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card vault-card';
+        card.innerHTML = `
+          <div class="vault-card-header">
+            <span class="vault-card-type ${item.type}">${item.type}</span>
+            <button class="control-btn" onclick="deleteVaultItem(${item.id})" style="color:var(--color-text-muted);">
+              <i data-lucide="trash" style="width:14px; height:14px;"></i>
+            </button>
+          </div>
+          <h4 class="vault-card-title">${item.title}</h4>
+          <p class="vault-card-preview">${item.preview}</p>
+          <div class="vault-card-footer">
+            <span>${item.date}</span>
+            <div class="vault-tags">
+              ${item.tags.map(t => `<span class="vault-tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function deleteVaultItem(id) {
+      state.vault = state.vault.filter(i => i.id !== id);
+      saveState();
+      renderVaultGrid();
+    }
+
+    function clearVault() {
+      if (confirm("Are you sure you want to purge all records in the Knowledge Vault?")) {
+        state.vault = [];
+        saveState();
+        renderVaultGrid();
+      }
+    }
+  </script>
+</body>
+</html>

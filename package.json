@@ -1,0 +1,12 @@
+{
+  "name": "ai-sheldon-workspace",
+  "version": "1.0.0",
+  "description": "Workspace root for AI Sheldon full-stack monorepo",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:all": "npm run build:backend && npm run build:frontend"
+  }
+}
